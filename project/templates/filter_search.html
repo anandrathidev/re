@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block body %}
+<style>
+    #map {
+	height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+</style>
+
+<div class="container">
+	<div class="row">
+		<div class="col-md-12">
+
+		     <ul class="nav nav-tabs" role="tablist">
+  <li class="nav-item">
+    <a class="nav-link  active" href="" role="tab" data-toggle="tab" aria-selected="true" onclick='mapHide()'>List</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="" role="tab" data-toggle="tab" onclick='mapShow()'>Map</a>
+  </li>
+
+</ul>
+
+<div id="map" style='display:none;height:1000px;'></div>
+
+
+<!-- Tab panes -->
+<div class="tab-content">
+  <div role="tabpanel" class="tab-pane active" id="profile">
+
+
+
+
+      		{% for i in pagin %}
+			<div class="card" style="margin-top: 40px; margin-bottom: 40px;">
+			    <a href='{% url 'home:details' i.id_user category1 %}'>
+				<div class="card-header">
+					{{i.user.username}}
+				</div>
+
+				<div class="card-body">
+					<img class="img-fluid img-thumbnail" src="{{i.image.url}}">
+				</div>
+				</a>
+				<div class="card-footer">
+				    <b>${{i.Price}}</b>
+				    <i class='fa fa-star fa-lg' id='star{{i.id_user}}' style='float:right; cursor:pointer; {% ifequal i.saved True %}color:orange;{% endifequal %}' onclick='StarSearch("{{i.id_user}}")'></i>
+				    <p>{{i.street_name}} {{i.street_number}}</p>
+					<p>{{i.state}} {{i.suburb}}</p>
+					<p><i class="fa fa-bed"></i>{{i.Bedrooms}} <i class='fa fa-bath'></i>{{i.Bathrooms}} <i class="fa fa-car"></i>{{i.Car_spaces}}| {{i.Property_type}}</p>
+				</div>
+			</div>
+
+		{% endfor %}
+
+
+
+            <div class="pagination">
+            <span class="step-links">
+            {% if pagin.has_previous %}
+                <a href="?page=1">&laquo; first</a>
+                <a href="?page={{ pagin.previous_page_number }}">previous</a>
+            {% endif %}
+
+            <span class="current">
+                Page {{ pagin.number }} of {{ pagin.paginator.num_pages }}.
+            </span>
+
+            {% if pagin.has_next %}
+                <a href="?page={{ pagin.next_page_number }}">next</a>
+                <a href="?page={{ pagin.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+            </span>
+            </div>
+
+
+  </div>
+  <div role="tabpanel" class="tab-pane fade" id="buzz">
+
+      <!--<div id="map"></div>-->
+
+  </div>
+
+</div>
+
+
+
+
+        <!--{{category1}}-->
+
+
+
+
+
+
+
+		</div>
+	</div>
+
+
+
+</div>
+{% csrf_token %}
+<script>
+
+function mapShow(){
+    document.querySelector('#map').style.display='block'
+    document.querySelector('#profile').style.display='none'
+
+    console.log('shown')
+}
+
+function mapHide(){
+    document.querySelector('#map').style.display='none'
+    document.querySelector('#profile').style.display='block'
+
+    console.log('hidden')
+}
+
+
+
+var url1 = 'http://anandrathi.pythonanywhere.com/'
+    function StarSearch(e){
+        console.log(e)
+	var token = document.querySelector("input[name=csrfmiddlewaretoken]").value
+
+	var url = url1 +'savesearch/'
+	let  formData = new FormData()
+	formData.append('post_id', e)
+
+
+	fetch(url,
+	{
+	body: new URLSearchParams(formData),
+	method: 'post',
+	headers:{
+	'X-CSRFTOKEN': token
+	}
+
+
+	}).then(res => res.json()).then(function(data) {
+        var post_id = '#star'+data.post_id
+        if (data.msg == 'saved'){
+           document.querySelector(post_id).style.color = 'orange'
+        }
+        else if (data.msg == 'deleted'){
+           document.querySelector(post_id).style.color = 'grey'
+        }
+ 		console.log(data)
+
+
+
+	})
+
+    }
+</script>
+
+<script>
+function initMap() {
+
+	var broadway = {
+		info: '<strong>Chipotle on Broadway</strong><br>\
+					5224 N Broadway St<br> Chicago, IL 60640<br>\
+					<a href="https://goo.gl/maps/jKNEDz4SyyH2">Get Directions</a>',
+		lat: 41.976816,
+		long: -87.659916
+	};
+    {% for i in pagin %}
+	var belmont = {
+		info: '<strong>Chipotle on Belmont</strong><br>\
+					{{i.street_number}} {{i.street_name}} {{i.postcode}}<br>
+					<a href="https://goo.gl/maps/PHfsWTvgKa92">Get Directions</a>',
+		lat: 41.939670,
+		long: -87.655167
+	};
+	{% endfor %}
+
+	var sheridan = {
+		info: '<strong>Chipotle on Sheridan</strong><br>\r\
+					6600 N Sheridan Rd<br> Chicago, IL 60626<br>\
+					<a href="https://goo.gl/maps/QGUrqZPsYp92">Get Directions</a>',
+		lat: 42.002707,
+		long: -87.661236
+	};
+
+	var locations = [
+      [broadway.info, broadway.lat, broadway.long],
+      [belmont.info, belmont.lat, belmont.long],
+      [sheridan.info, sheridan.lat, sheridan.long],
+    ];
+
+	var map = new google.maps.Map(document.getElementById('map'), {
+		zoom: 13,
+		center: new google.maps.LatLng(41.976816, -87.659916),
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	});
+
+	var infowindow = new google.maps.InfoWindow({});
+
+	var marker, i;
+
+	for (i = 0; i < locations.length; i++) {
+		marker = new google.maps.Marker({
+			position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+			map: map
+		});
+
+		google.maps.event.addListener(marker, 'click', (function (marker, i) {
+			return function () {
+				infowindow.setContent(locations[i][0]);
+				infowindow.open(map, marker);
+			}
+		})(marker, i));
+	}
+}
+
+
+
+
+
+</script>
+
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBfZ86mdGX5E7o4PGSB7ct22axSb_JzVTY&callback=initMap"></script>
+
+
+
+{% endblock %}
